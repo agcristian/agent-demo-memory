@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bakehouse — Asistente</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;450;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --brick:#b85444; --navy:#2b4360; --teal:#01717e; --rose:#e6bdbd; --gray:#90979b;
+      --paper:#f7f2ea; --surface:#fffdf9; --line:#e7ddcd; --ink:#1d2a34; --soft-ink:#33424e;
+      --serif:'Fraunces',Georgia,'Times New Roman',serif;
+      --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    }
+    * { box-sizing:border-box; }
+    body { font-family:var(--sans); margin:0; background:var(--paper); color:var(--ink); -webkit-font-smoothing:antialiased; }
+
+    /* Masthead — navy bar, white wordmark + orange accent */
+    header { background:var(--navy); padding:22px 32px 18px; }
+    .brand { display:flex; align-items:baseline; gap:10px; }
+    .brand .dot { width:9px; height:9px; border-radius:50%; background:var(--brick); transform:translateY(-2px); }
+    .brand h1 { font-family:var(--serif); font-weight:600; font-size:24px; margin:0; color:#ffffff; letter-spacing:.2px; }
+    header p { font-family:var(--sans); font-size:12.5px; margin:6px 0 0 19px; color:rgba(255,255,255,.72); }
+
+    .layout { display:flex; gap:22px; max-width:1340px; margin:26px auto; padding:0 24px; align-items:flex-start; flex-wrap:wrap; }
+    .col-left  { flex:1 1 290px; min-width:268px; }
+    .chat      { flex:2 1 460px; min-width:340px; }
+    .col-right { flex:1 1 278px; min-width:258px; }
+
+    .card { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:18px 20px; margin-bottom:18px; box-shadow:0 1px 2px rgba(43,67,96,.04); }
+    .card h3 { font-family:var(--serif); font-size:16px; font-weight:600; margin:0 0 14px; color:var(--navy); }
+
+    /* Knowledge model (left) — quiet, editorial */
+    .kbox { padding:2px 0 2px 14px; margin-bottom:14px; border-left:2px solid var(--teal); }
+    .kbox.mem { border-left-color:var(--brick); }
+    .kbox .t { font-family:var(--sans); font-size:12px; font-weight:600; letter-spacing:.3px; text-transform:uppercase; color:var(--soft-ink); margin-bottom:5px; }
+    .kbox .d { font-size:13.5px; color:var(--ink); line-height:1.7; }
+    .nope { padding-left:14px; border-left:2px solid var(--rose); font-size:13.5px; color:var(--soft-ink); line-height:1.8; }
+
+    /* Chat (center) — refined transcript, not loud bubbles */
+    .ids { display:flex; gap:10px; margin-bottom:14px; }
+    .ids input { flex:1; padding:10px 13px; border:1px solid var(--line); border-radius:10px; font-family:var(--sans); font-size:13px; background:var(--surface); color:var(--ink); }
+    .ids input:focus, #q:focus { outline:none; border-color:var(--brick); box-shadow:0 0 0 3px rgba(184,84,68,.12); }
+    #log { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:20px; height:56vh; overflow-y:auto; }
+    .msg { margin:10px 0; padding:12px 16px; font-size:14px; line-height:1.55; white-space:pre-wrap; max-width:86%; border-radius:14px; }
+    .user { background:#eef1f4; color:var(--ink); margin-left:auto; }
+    .bot  { background:#fbf4ee; color:var(--ink); margin-right:auto; border:1px solid var(--line); }
+    .row { display:flex; gap:10px; margin-top:14px; }
+    #q { flex:1; padding:12px 15px; border:1px solid var(--line); border-radius:10px; font-family:var(--sans); font-size:14px; background:var(--surface); color:var(--ink); }
+    button#send { background:var(--brick); color:#fff; border:0; border-radius:10px; padding:0 22px; font-family:var(--sans); font-weight:600; font-size:14px; cursor:pointer; transition:background .15s; }
+    button#send:hover { background:#a14637; }
+    button#send:disabled { opacity:.45; cursor:default; }
+    .hint { font-size:11.5px; color:var(--gray); margin-top:9px; line-height:1.55; }
+
+    /* Example questions (right) */
+    .chips { display:flex; flex-direction:column; gap:8px; }
+    .chip-group { font-size:11px; font-weight:600; color:var(--gray); margin:10px 0 3px; }
+    .chip { text-align:left; background:var(--surface); border:1px solid var(--line); color:var(--ink); border-radius:10px; padding:10px 13px; font-family:var(--sans); font-size:13px; cursor:pointer; line-height:1.45; transition:all .12s; }
+    .chip:hover { background:#fbf4ee; border-color:var(--brick); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand"><span class="dot"></span><h1>Bakehouse</h1></div>
+    <p>Asistente de conocimiento con memoria · Knowledge Assistant + Lakebase</p>
+  </header>
+
+  <div class="layout">
+    <!-- ── IZQUIERDA: modelo de conocimiento ── -->
+    <div class="col-left">
+      <div class="card">
+        <h3>Qué sabe el agente</h3>
+        <div class="kbox ka">
+          <div class="t">Conocimiento · Knowledge Assistant</div>
+          <div class="d">Política de devoluciones<br>Productos: 6 insignia + descripciones<br>Sucursales: 48 en 9 países<br>Operación de franquicias</div>
+        </div>
+        <div class="kbox mem">
+          <div class="t">Memoria · Lakebase</div>
+          <div class="d">Tu nombre y preferencias<br>Tu producto favorito<br>Recuerdo entre sesiones (por user_id)</div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Qué no sabe (aún)</h3>
+        <div class="nope">Inventario / stock en tiempo real<br>Precios exactos por tienda<br>Datos fuera de los documentos del KA</div>
+      </div>
+    </div>
+
+    <!-- ── CENTRO: chat ── -->
+    <div class="chat">
+      <div class="ids">
+        <input id="user" placeholder="user_id (memoria largo plazo)" value="demo-user" />
+        <input id="thread" placeholder="thread_id (sesión) — vacío = nueva" />
+      </div>
+      <div id="log"></div>
+      <div class="row">
+        <input id="q" placeholder="Escribe tu mensaje…" autofocus />
+        <button id="send">Enviar</button>
+      </div>
+      <div class="hint">Tip demo: mismo <b>thread_id</b> = continuidad de sesión; cambia el
+        <b>thread_id</b> pero mantén el <b>user_id</b> para mostrar recall entre sesiones.</div>
+    </div>
+
+    <!-- ── DERECHA: preguntas de ejemplo ── -->
+    <div class="col-right">
+      <div class="card">
+        <h3>Preguntas de ejemplo</h3>
+        <div class="chips" id="chips">
+          <div class="chip-group">Conocimiento — específico</div>
+          <button class="chip">¿En cuántos días puedo devolver un producto con recibo?</button>
+          <button class="chip">Descríbeme el Tokyo Tidbits</button>
+          <button class="chip">¿En qué sucursales de Japón está Bakehouse?</button>
+          <button class="chip">¿Dónde está la sucursal Golden Crumbs?</button>
+          <div class="chip-group">Conocimiento — lista</div>
+          <button class="chip">¿Cuáles son los 6 productos insignia?</button>
+          <div class="chip-group">Memoria — guardar</div>
+          <button class="chip">Soy Ana y mi producto favorito es Pearly Pies</button>
+          <div class="chip-group">Memoria — recordar</div>
+          <button class="chip">¿Cuál es mi producto favorito?</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const log = document.getElementById('log');
+    const q = document.getElementById('q');
+    const send = document.getElementById('send');
+    const threadEl = document.getElementById('thread');
+    const userEl = document.getElementById('user');
+
+    function add(text, cls) {
+      const d = document.createElement('div');
+      d.className = 'msg ' + cls;
+      d.textContent = text;
+      log.appendChild(d);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    document.querySelectorAll('#chips .chip').forEach(c => {
+      c.onclick = () => { q.value = c.textContent; q.focus(); };
+    });
+
+    async function ask() {
+      const message = q.value.trim();
+      if (!message) return;
+      add(message, 'user');
+      q.value = '';
+      send.disabled = true;
+      try {
+        const res = await fetch('/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message,
+            thread_id: threadEl.value.trim() || null,
+            user_id: userEl.value.trim() || 'anonymous'
+          })
+        });
+        const data = await res.json();
+        threadEl.value = data.thread_id;
+        add(data.reply, 'bot');
+      } catch (e) {
+        add('Error: ' + e, 'bot');
+      } finally {
+        send.disabled = false;
+        q.focus();
+      }
+    }
+    send.onclick = ask;
+    q.addEventListener('keydown', e => { if (e.key === 'Enter') ask(); });
+  </script>
+</body>
+</html>

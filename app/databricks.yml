@@ -1,0 +1,37 @@
+# databricks.yml — Databricks Asset Bundle (DAB) para desplegar la App.  REEMPLAZA los <PLACEHOLDERS>.
+# Deploy:  databricks bundle deploy -t dev -p <CLI_PROFILE>
+# Run:     databricks bundle run  memory_app -t dev -p <CLI_PROFILE>
+bundle:
+  name: <APP_NAME>
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://<WORKSPACE_HOST>     # <-- p.ej. adb-XXXXXXXXXXXX.XX.azuredatabricks.net (Azure) o ...cloud.databricks.com (AWS)
+
+resources:
+  apps:
+    memory_app:                          # clave del recurso → úsala en `bundle run memory_app`
+      name: <APP_NAME>                   # <-- nombre visible de la Databricks App
+      description: "Agente de Conocimiento (KA) con memoria corto/largo plazo en Lakebase."
+      source_code_path: ./
+      # Endpoints a los que el service principal de la App tendrá acceso (auto-grant en `bundle deploy`):
+      resources:
+        - name: llm
+          serving_endpoint:
+            name: databricks-claude-sonnet-4-5
+            permission: CAN_QUERY
+        - name: embeddings
+          serving_endpoint:
+            name: databricks-gte-large-en
+            permission: CAN_QUERY
+        - name: knowledge_assistant
+          serving_endpoint:
+            name: <KA_ENDPOINT_NAME>     # <-- serving endpoint del KA
+            permission: CAN_QUERY
+
+# NOTA — Lakebase NO se enlaza aquí. El acceso a Lakebase se concede asignando un rol de Postgres
+# al service principal de la App (paso manual post-deploy; ver app/README.md §"Roles de Lakebase").
+# Si activas el UC_FUNCTIONS opcional, además otorga al SP: USE CATALOG, USE SCHEMA y EXECUTE.

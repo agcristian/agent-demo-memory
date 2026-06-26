@@ -1,0 +1,34 @@
+# app.yaml — runtime de la Databricks App.  REEMPLAZA los <PLACEHOLDERS> (ver README.md raíz).
+# Comando de arranque: levanta el server FastAPI con uvicorn.
+command: ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]
+
+env:
+  - name: LLM_ENDPOINT_NAME
+    value: "databricks-claude-sonnet-4-5"        # endpoint FM estándar (ajusta si tu workspace usa otro)
+  - name: KA_ENDPOINT_NAME
+    value: "<KA_ENDPOINT_NAME>"                   # <-- serving endpoint del Knowledge Assistant
+  - name: EMBEDDING_ENDPOINT
+    value: "databricks-gte-large-en"             # embeddings para la búsqueda semántica del store
+  - name: EMBEDDING_DIMS
+    value: "1024"                                # dimensiones del modelo de embeddings de arriba
+  - name: LAKEBASE_AUTOSCALING_PROJECT
+    value: "<LAKEBASE_PROJECT>"                   # <-- proyecto Lakebase Autoscaling
+  - name: LAKEBASE_AUTOSCALING_BRANCH
+    value: "<LAKEBASE_BRANCH>"                    # <-- branch, normalmente "production"
+  # OPCIONAL — tool de datos en vivo (UC function). Apagada por defecto = foco en KA + memoria.
+  # Para activarla: (1) descomenta las 2 líneas de abajo; (2) la función debe EXISTIR en UC
+  # (créala con uc_function/top_products_by_franchise.sql o desde el notebook); (3) otorga al
+  # service principal de la App: USE CATALOG, USE SCHEMA y EXECUTE sobre la función; (4) redeploy.
+  # - name: UC_FUNCTIONS
+  #   value: "<CATALOG>.<SCHEMA>.top_products_by_franchise"
+  - name: SYSTEM_PROMPT
+    value: >-
+      Eres el asistente de Bakehouse, una cadena de panaderías.
+      REGLA CRÍTICA DE GROUNDING: para CUALQUIER pregunta sobre Bakehouse (productos, devoluciones,
+      sucursales, franquicias) DEBES llamar a la herramienta ask_knowledge_base y responder
+      ÚNICAMENTE con la información que devuelva. NUNCA uses tu conocimiento general para dar
+      nombres, listas, cifras o datos de Bakehouse: si el resultado de ask_knowledge_base no
+      contiene el dato, di explícitamente que no está en la base de conocimiento (no lo inventes).
+      Si la pregunta no es sobre Bakehouse, di que está fuera de tu alcance.
+      AL INICIO de cada conversación llama a recall_memories; guarda datos duraderos del usuario
+      con save_memory y usa forget_memory si te lo piden. Responde en español y conciso.
